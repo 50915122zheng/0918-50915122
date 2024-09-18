@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>剪刀石頭布遊戲</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f0f0f0; /* 預設背景顏色 */
+            transition: background-color 0.3s ease; /* 添加平滑過渡效果 */
+        }
+        .game-container {
+            margin-top: 100px;
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            display: inline-block;
+        }
+        .choices {
+            margin: 20px 0;
+        }
+        .choice-btn {
+            cursor: pointer;
+            border: none;
+            background: none;
+            padding: 0; /* 取消內邊距 */
+            margin: 10px;
+            transition: opacity 0.3s ease;
+        }
+        .choice-btn:hover {
+            opacity: 0.8;
+        }
+        img {
+            width: 100px; /* 圖片的寬度 */
+            height: 100px; /* 圖片的高度 */
+        }
+        .score-board {
+            margin-top: 20px;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+
+    <div class="game-container">
+        <h1>巨剪石英羊皮紙</h1>
+        <div class="choices">
+            <button class="choice-btn" id="rock" data-choice="石英">
+                <img src="rock.png" alt="石英">
+            </button>
+            <button class="choice-btn" id="paper" data-choice="羊皮紙">
+                <img src="paper.png" alt="羊皮紙">
+            </button>
+            <button class="choice-btn" id="scissors" data-choice="巨剪">
+                <img src="scissors.png" alt="巨剪">
+            </button>
+        </div>
+        <div class="score-board">
+            <h2>分數</h2>
+            <p>你: <span id="player-score">0</span></p>
+            <p>電腦: <span id="computer-score">0</span></p>
+        </div>
+        <button id="reset" class="choice-btn">重新開始</button>
+        <button id="quit" class="choice-btn">提早結束</button>
+    </div>
+
+    <!-- 添加音效 -->
+    <audio id="win-sound" src="win.mp3"></audio>
+    <audio id="lose-sound" src="lose.mp3"></audio>
+    <audio id="draw-sound" src="draw.mp3"></audio>
+
+    <script>
+        const choices = ["石英", "羊皮紙", "巨剪"];
+        const buttons = document.querySelectorAll('.choice-btn');
+        const playerScoreDisplay = document.getElementById('player-score');
+        const computerScoreDisplay = document.getElementById('computer-score');
+
+        let playerScore = 0;
+        let computerScore = 0;
+
+        buttons.forEach(button => {
+            button.addEventListener('click', function() {
+                if (this.id === 'reset' || this.id === 'quit') {
+                    return; // 不處理重新開始或提早結束按鈕的點擊
+                }
+                
+                const playerChoice = this.dataset.choice; // 獲取按鈕的數據屬性
+                const computerChoice = getComputerChoice();
+                const result = getResult(playerChoice, computerChoice);
+
+                // 使用 SweetAlert2 顯示結果
+                Swal.fire({
+                    title: '結果',
+                    text: `你選擇了: ${playerChoice}\n電腦選擇了: ${computerChoice}\n${result}`,
+                    icon: result === "你贏了!" ? 'success' : result === "你輸了!" ? 'error' : 'info',
+                    confirmButtonText: '好的'
+                }).then(() => {
+                    // 播放對應的音效
+                    playSound(result);
+                    
+                    // 更新分數
+                    if (result === "你贏了!") {
+                        playerScore++;
+                    } else if (result === "你輸了!") {
+                        computerScore++;
+                    }
+                    updateScores();
+                    checkForWinner();
+                });
+            });
+        });
+
+        document.getElementById('reset').addEventListener('click', resetGame);
+        document.getElementById('quit').addEventListener('click', quitGame);
+
+        function getComputerChoice() {
+            const randomIndex = Math.floor(Math.random() * choices.length);
+            return choices[randomIndex];
+        }
+
+        function getResult(player, computer) {
+            if (player === computer) {
+                return "平手";
+            }
+            if (
+                (player === "石英" && computer === "巨剪") ||
+                (player === "巨剪" && computer === "羊皮紙") ||
+                (player === "羊皮紙" && computer === "石英")
+            ) {
+                return "你贏了!";
+            } else {
+                return "你輸了!";
+            }
+        }
+
+        function updateScores() {
+            playerScoreDisplay.innerText = playerScore;
+            computerScoreDisplay.innerText = computerScore;
+        }
+
+        function playSound(result) {
+            const winSound = document.getElementById('win-sound');
+            const loseSound = document.getElementById('lose-sound');
+            const drawSound = document.getElementById('draw-sound');
+
+            if (result === "你贏了!") {
+                winSound.currentTime = 0; // 重置音效播放時間
+                winSound.play();
+            } else if (result === "你輸了!") {
+                loseSound.currentTime = 0;
+                loseSound.play();
+            } else {
+                drawSound.currentTime = 0;
+                drawSound.play();
+            }
+        }
+
+        function checkForWinner() {
+            if (playerScore === 3) {
+                Swal.fire({
+                    title: '恭喜!',
+                    text: '你贏得了比賽!',
+                    icon: 'success',
+                    confirmButtonText: '重新開始'
+                }).then(resetGame);
+            } else if (computerScore === 3) {
+                Swal.fire({
+                    title: '抱歉!',
+                    text: '電腦贏得了比賽!',
+                    icon: 'error',
+                    confirmButtonText: '重新開始'
+                }).then(resetGame);
+            }
+        }
+
+        function resetGame() {
+            playerScore = 0;
+            computerScore = 0;
+            updateScores();
+        }
+
+        function quitGame() {
+            Swal.fire({
+                title: '遊戲結束',
+                text: '感謝你的遊玩!',
+                icon: 'info',
+                confirmButtonText: '好的'
+            }).then(() => {
+                playerScore = 0;
+                computerScore = 0;
+                updateScores();
+            });
+        }
+
+        // 初始化 RGB 變量
+        let r = 0, g = 0, b = 0;
+        let rDirection = 1, gDirection = 1, bDirection = 1;
+
+        // 創建波浪效果的動畫
+        function waveRGB() {
+            // 根據方向改變 RGB 值
+            r += rDirection;
+            g += gDirection;
+            b += bDirection;
+
+            // 如果 RGB 值達到範圍的邊界，則改變方向
+            if (r >= 255 || r <= 0) rDirection *= -1;
+            if (g >= 255 || g <= 0) gDirection *= -1;
+            if (b >= 255 || b <= 0) bDirection *= -1;
+
+            // 設置背景顏色
+            document.body.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
+
+            // 繼續下一幀的動畫
+            requestAnimationFrame(waveRGB);
+        }
+
+        // 開始波浪效果的動畫
+        waveRGB();
+    </script>
+
+</body>
+</html>
